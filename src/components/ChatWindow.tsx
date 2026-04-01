@@ -4,10 +4,9 @@ import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import InputBox from "./InputBox";
 import QuickQuestions from "./QuickQuestions";
-import ChatSidebar from "./ChatSidebar";
 import ThemeToggle from "./ThemeToggle";
 import { motion } from "framer-motion";
-import { GraduationCap, Menu } from "lucide-react";
+import { GraduationCap, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -15,32 +14,17 @@ interface Message {
   content: string;
 }
 
-interface ChatSession {
-  id: string;
-  title: string;
-  created_at: string;
+interface ChatWindowProps {
+  onClose?: () => void;
 }
 
-const WELCOME_MESSAGE = `Welcome to **ABC University Admissions**! 👋
+const WELCOME_MESSAGE = `Hi! 👋 I'm the **ABC University** admission assistant.\n\nAsk me about courses, fees, eligibility, or admission dates!`;
 
-I'm your AI admission assistant. I can help you with:
-
-- 📚 **Courses** offered (B.Tech, B.Sc CS, MBA)
-- 💰 **Fee** structure
-- ✅ **Eligibility** requirements
-- 📅 **Admission dates** & process
-- 📞 **Contact** information
-
-How can I help you today?`;
-
-const ChatWindow = () => {
+const ChatWindow = ({ onClose }: ChatWindowProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: WELCOME_MESSAGE },
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -58,12 +42,11 @@ const ChatWindow = () => {
       await supabase.from("chat_history").insert({
         user_message: userMessage,
         bot_reply: botReply,
-        session_id: activeSessionId,
       });
     } catch (err) {
       console.error("Failed to save chat:", err);
     }
-  }, [activeSessionId]);
+  }, []);
 
   const sendMessage = async (content: string) => {
     const userMsg: Message = { role: "user", content };
@@ -73,7 +56,11 @@ const ChatWindow = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("chat", {
-        body: { messages: newMessages.filter((m) => m.role !== "assistant" || m.content !== WELCOME_MESSAGE) },
+        body: {
+          messages: newMessages.filter(
+            (m) => !(m.role === "assistant" && m.content === WELCOME_MESSAGE)
+          ),
+        },
       });
 
       if (error) throw error;
@@ -94,100 +81,82 @@ const ChatWindow = () => {
     }
   };
 
-  const handleNewChat = () => {
+  const handleClear = () => {
     setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
-    setActiveSessionId(null);
-    setSidebarOpen(false);
   };
 
-  const handleClearChat = async () => {
-    try {
-      await supabase.from("chat_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      setSessions([]);
-      handleNewChat();
-      toast.success("Chat history cleared");
-    } catch {
-      toast.error("Failed to clear history");
-    }
-  };
-
-  const isEmpty = messages.length <= 1;
+  const hasConversation = messages.length > 1;
 
   return (
-    <div className="flex h-screen bg-chat-surface overflow-hidden">
-      <ChatSidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelectSession={() => {}}
-        onNewChat={handleNewChat}
-        onClearChat={handleClearChat}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-sm font-semibold">ABC University</h1>
-                <p className="text-xs text-muted-foreground">Admission Assistant</p>
-              </div>
-            </div>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+            <GraduationCap className="w-4 h-4 text-primary-foreground" />
           </div>
-          <ThemeToggle />
-        </header>
-
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll py-6 space-y-4">
-          {isEmpty && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center h-full gap-6"
+          <div>
+            <h2 className="text-sm font-semibold leading-tight">ABC University</h2>
+            <p className="text-[11px] text-muted-foreground leading-tight">Admission Assistant</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {hasConversation && (
+            <button
+              onClick={handleClear}
+              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Clear chat"
             >
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
-                <GraduationCap className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <div className="text-center space-y-2">
-                <h2 className="text-lg font-semibold">How can I help you?</h2>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  Ask me anything about courses, fees, eligibility, or admission dates at ABC University.
-                </p>
-              </div>
-              <QuickQuestions onSelect={sendMessage} />
-            </motion.div>
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           )}
+          <ThemeToggle />
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
 
-          {!isEmpty && messages.map((msg, i) => (
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll py-4 space-y-3">
+        {!hasConversation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center h-full gap-4 px-4"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="text-sm font-semibold">How can I help?</h3>
+              <p className="text-xs text-muted-foreground">
+                Ask about courses, fees, or admissions
+              </p>
+            </div>
+            <QuickQuestions onSelect={sendMessage} />
+          </motion.div>
+        )}
+
+        {hasConversation &&
+          messages.map((msg, i) => (
             <MessageBubble key={i} role={msg.role} content={msg.content} />
           ))}
 
-          {isLoading && <TypingIndicator />}
-        </div>
+        {isLoading && <TypingIndicator />}
+      </div>
 
-        {/* Quick questions after welcome */}
-        {!isEmpty && messages.length === 1 && (
-          <div className="pb-2">
-            <QuickQuestions onSelect={sendMessage} />
-          </div>
-        )}
-
-        {/* Input */}
-        <div className="border-t border-border bg-background/80 backdrop-blur-sm pt-3">
+      {/* Input */}
+      {hasConversation && (
+        <div className="border-t border-border pt-2">
           <InputBox onSend={sendMessage} disabled={isLoading} />
         </div>
-      </div>
+      )}
     </div>
   );
 };
