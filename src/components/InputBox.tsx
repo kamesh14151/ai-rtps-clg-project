@@ -24,28 +24,28 @@ const InputBox = ({ onSend, disabled }: InputBoxProps) => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 pb-4">
-      <div className="relative flex items-end bg-chat-input-bg border border-border rounded-2xl shadow-sm transition-shadow focus-within:shadow-md focus-within:border-muted-foreground/30">
+    <div className="px-3 pb-3">
+      <div className="relative flex items-end bg-chat-input-bg border border-border rounded-xl transition-shadow focus-within:shadow-sm focus-within:border-muted-foreground/30">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about admissions, courses, fees..."
+          placeholder="Ask a question..."
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none bg-transparent px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 max-h-32 min-h-[44px]"
+          className="flex-1 resize-none bg-transparent px-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 max-h-24 min-h-[36px]"
           style={{ fieldSizing: "content" } as React.CSSProperties}
         />
         <button
           onClick={handleSend}
           disabled={disabled || !input.trim()}
-          className="flex-shrink-0 m-1.5 p-2 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-shrink-0 m-1 p-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-3.5 h-3.5" />
         </button>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        ABC University Admission Assistant · Powered by AI
+      <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+        Powered by AI · ABC University
       </p>
     </div>
   );
